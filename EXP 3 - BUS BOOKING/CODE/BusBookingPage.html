@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>BusEZ - Book Your Journey in Style</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #0d47a1;
+      --accent: #00bcd4;
+      --bg-light: #f0f4f8;
+      --bg-dark: #ffffff;
+      --text-main: #0f172a;
+      --text-sub: #64748b;
+      --gradient: linear-gradient(to right, #0d47a1, #00bcd4);
+    }
+    * { box-sizing: border-box; font-family: 'Inter', sans-serif; }
+    body { margin: 0; background: var(--bg-light); color: var(--text-main); }
+    header {
+      background: var(--gradient);
+      padding: 20px;
+      text-align: center;
+      color: white;
+    }
+    header h1 {
+      margin: 0;
+      font-family: 'Playfair Display', serif;
+      font-size: 2.5rem;
+    }
+    .container {
+      max-width: 1000px;
+      margin: 40px auto;
+      background: white;
+      padding: 40px;
+      border-radius: 20px;
+      box-shadow: 0 12px 40px rgba(0,0,0,0.08);
+    }
+    label {
+      display: block;
+      margin-top: 20px;
+      font-weight: 600;
+    }
+    select, input[type="date"], input[type="number"], input[type="text"], input[type="tel"] {
+      width: 100%;
+      padding: 12px;
+      margin-top: 5px;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      background: #f8fafc;
+      font-size: 16px;
+    }
+    button {
+      display: block;
+      padding: 12px 20px;
+      background: var(--gradient);
+      color: white;
+      font-size: 16px;
+      font-weight: 600;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      margin: 30px auto;
+      transition: 0.3s ease;
+    }
+    button:hover { opacity: 0.9; }
+    .section { display: none; margin-top: 40px; }
+    .bus-card, .summary-card {
+      background: #f8fafc;
+      padding: 20px;
+      border-radius: 15px;
+      margin-bottom: 20px;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.05);
+    }
+    .seats {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 10px 20px;
+      margin-top: 20px;
+      padding: 10px 0;
+    }
+    .seats .gap { visibility: hidden; }
+    .seat {
+      background: #cbd5e1;
+      padding: 16px;
+      border-radius: 8px;
+      text-align: center;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    .seat.selected { background: var(--primary); color: white; }
+    .seat.blocked { background: #94a3b8; cursor: not-allowed; color: white; }
+    .summary-card {
+      background: #ffffff;
+      border-left: 6px solid var(--accent);
+      padding: 30px;
+      border-radius: 12px;
+      font-size: 16px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+    }
+    .summary-card h3 {
+      font-family: 'Playfair Display', serif;
+      color: var(--primary);
+      margin-bottom: 10px;
+      font-size: 22px;
+    }
+  </style>
+</head>
+<body>
+  <header><h1>BusEZ - Book Your Journey in Style</h1></header>
+  <div class="container">
+    <label>From City:</label>
+    <select id="fromCity" onchange="updateToCities()">
+      <option value="">Select From City</option>
+      <option>Bangalore</option>
+      <option>Hyderabad</option>
+      <option>Chennai</option>
+      <option>Mumbai</option>
+      <option>Kochi</option>
+      <option>Delhi</option>
+      <option>Kolkata</option>
+    </select>
+
+    <label>To City:</label>
+    <select id="toCity"></select>
+
+    <label>Date of Journey:</label>
+    <input type="date" id="travelDate" onclick="this.showPicker()">
+
+    <label>Number of Passengers:</label>
+    <input type="number" id="passengers" min="1" max="6">
+
+    <button onclick="showBuses()">Search Buses</button>
+
+    <div id="busList" class="section"></div>
+    <div id="passengerDetails" class="section"></div>
+    <div id="seatSelection" class="section"></div>
+    <div id="paymentButton" class="section"></div>
+    <div id="ticketSummary" class="section"></div>
+  </div>
+
+  <script>
+    const cities = ["Bangalore", "Hyderabad", "Chennai", "Mumbai", "Kochi", "Delhi", "Kolkata"];
+    const localPoints = {
+      Bangalore: "Whitefield",
+      Hyderabad: "Miyapur",
+      Chennai: "Kilambakkam",
+      Mumbai: "Borivali",
+      Kochi: "Ernakulam",
+      Delhi: "Kashmere Gate",
+      Kolkata: "Howrah"
+    };
+    const buses = [
+      { name: "NTR Travels", start: "06:00 AM", end: "10:30 AM", price: 350 },
+      { name: "RedLine Express", start: "08:00 AM", end: "12:00 PM", price: 420 },
+      { name: "Urban Connect", start: "09:00 AM", end: "01:30 PM", price: 390 },
+      { name: "BlueCity Tours", start: "12:00 PM", end: "04:00 PM", price: 410 },
+      { name: "SuperFast Go", start: "03:00 PM", end: "07:15 PM", price: 445 },
+      { name: "MetroLine Coach", start: "06:30 PM", end: "10:00 PM", price: 430 },
+      { name: "VRS Deluxe", start: "10:00 PM", end: "03:00 AM", price: 470 }
+    ];
+    const blockedSeats = ['A1', 'B2', 'C3', 'D4'];
+    let selectedBus = null;
+    let selectedSeats = [];
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const today = new Date().toISOString().split('T')[0];
+      document.getElementById('travelDate').setAttribute('min', today);
+    });
+
+    function scrollToElement(id) {
+      document.getElementById(id).scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function updateToCities() {
+      const from = document.getElementById("fromCity").value;
+      const toSelect = document.getElementById("toCity");
+      toSelect.innerHTML = '<option value="">Select To City</option>';
+      cities.filter(c => c !== from).forEach(c => {
+        const opt = document.createElement("option");
+        opt.textContent = c;
+        toSelect.appendChild(opt);
+      });
+    }
+
+    function showBuses() {
+      const from = document.getElementById('fromCity').value;
+      const to = document.getElementById('toCity').value;
+      const date = document.getElementById('travelDate').value;
+      const passengers = document.getElementById('passengers').value;
+      if (!from || !to || !date || !passengers) return alert("Please fill all fields.");
+
+      const list = document.getElementById('busList');
+      list.innerHTML = '<h2>Available Buses</h2>';
+      buses.forEach((bus, i) => {
+        const card = document.createElement('div');
+        card.className = 'bus-card';
+        card.innerHTML = `
+          <strong>${bus.name}</strong><br>
+          Departure: ${bus.start} → Arrival: ${bus.end}<br>
+          Fare: ₹${bus.price} per seat<br>
+          Boarding Point: ${localPoints[from]}<br>
+          Drop Point: ${localPoints[to]}<br>
+          <button onclick="selectBus(${i})">Select This Bus</button>`;
+        list.appendChild(card);
+      });
+      list.style.display = 'block';
+      scrollToElement('busList');
+    }
+
+    function selectBus(index) {
+      selectedBus = buses[index];
+      document.getElementById('passengerDetails').innerHTML = `
+        <h2>Passenger Details</h2>
+        <label>Full Name</label><input type="text" id="passengerName">
+        <label>Age</label><input type="number" id="passengerAge">
+        <label>Gender</label><select id="passengerGender">
+          <option value="">Select Gender</option><option>Male</option><option>Female</option></select>
+        <label>Phone Number</label><input type="tel" id="passengerPhone">
+        <button onclick="showSeats()">Continue to Seat Selection</button>
+      `;
+      document.getElementById('passengerDetails').style.display = 'block';
+      scrollToElement('passengerDetails');
+    }
+
+    function showSeats() {
+      const layout = document.getElementById('seatSelection');
+      layout.innerHTML = '<h2>Select Your Seats</h2><div class="seats" id="seatGrid"></div><button onclick="showSummary()">Confirm Seats</button>';
+      const grid = document.getElementById('seatGrid');
+      const rows = ['A','B','C','D','E'];
+      grid.innerHTML = '';
+      selectedSeats = [];
+      rows.forEach(row => {
+        for (let i = 1; i <= 4; i++) {
+          const seatId = row + i;
+          const div = document.createElement('div');
+          div.className = 'seat';
+          div.innerText = seatId;
+          if (blockedSeats.includes(seatId)) div.classList.add('blocked');
+          div.onclick = () => toggleSeat(div, seatId);
+          grid.appendChild(div);
+        }
+      });
+      layout.style.display = 'block';
+      scrollToElement('seatSelection');
+    }
+
+    function toggleSeat(el, seat) {
+      if (el.classList.contains('blocked')) return;
+      const max = parseInt(document.getElementById('passengers').value);
+      if (el.classList.contains('selected')) {
+        el.classList.remove('selected');
+        selectedSeats = selectedSeats.filter(s => s !== seat);
+      } else {
+        if (selectedSeats.length >= max) return alert("Maximum seats selected");
+        el.classList.add('selected');
+        selectedSeats.push(seat);
+      }
+    }
+    function showConfirmButton() {
+      const section = document.getElementById('paymentButton');
+      section.innerHTML = '<h2>Confirm & Pay</h2><button onclick="showSummary()">Confirm Booking</button>';
+      section.style.display = 'block';
+      scrollToElement('paymentButton');
+    }
+
+    function showSummary() {
+      const name = document.getElementById('passengerName').value;
+      const age = document.getElementById('passengerAge').value;
+      const gender = document.getElementById('passengerGender').value;
+      const phone = document.getElementById('passengerPhone').value;
+      if (!name || !age || !gender || !phone || selectedSeats.length === 0) {
+        alert("Please fill all details and select seats.");
+        return;
+      }
+      const from = document.getElementById('fromCity').value;
+      const to = document.getElementById('toCity').value;
+      const date = document.getElementById('travelDate').value;
+      const total = selectedSeats.length * selectedBus.price;
+
+      document.getElementById('ticketSummary').innerHTML = `
+        <div class="summary-card">
+          <h3>🎟️ E-Ticket | BusEZ</h3>
+          <p><strong>Passenger:</strong> ${name} (${gender}, Age ${age})<br>
+          <strong>Phone:</strong> ${phone}<br>
+          <strong>From:</strong> ${from} (Boarding: ${localPoints[from]})<br>
+          <strong>To:</strong> ${to} (Drop: ${localPoints[to]})<br>
+          <strong>Date:</strong> ${date}<br>
+          <strong>Bus:</strong> ${selectedBus.name}<br>
+          <strong>Timings:</strong> ${selectedBus.start} → ${selectedBus.end}<br>
+          <strong>Seats:</strong> ${selectedSeats.join(', ')}<br>
+          <strong>Total Fare:</strong> ₹${total}</p>
+        </div>`;
+      document.getElementById('ticketSummary').style.display = 'block';
+      scrollToElement('ticketSummary');
+      saveBookingToDB();
+    }
+
+    function saveBookingToDB() {
+  const name = document.getElementById('passengerName').value;
+  const age = document.getElementById('passengerAge').value;
+  const gender = document.getElementById('passengerGender').value;
+  const phone = document.getElementById('passengerPhone').value;
+  const from = document.getElementById('fromCity').value;
+  const to = document.getElementById('toCity').value;
+  const date = document.getElementById('travelDate').value;
+  const total = selectedSeats.length * selectedBus.price;
+
+  const formData = new FormData();
+  formData.append("name", name);
+  formData.append("age", age);
+  formData.append("gender", gender);
+  formData.append("phone", phone);
+  formData.append("from", from);
+  formData.append("to", to);
+  formData.append("date", date);
+  formData.append("bus", selectedBus.name);
+  formData.append("start", selectedBus.start);
+  formData.append("end", selectedBus.end);
+  formData.append("seats", selectedSeats.join(", "));
+  formData.append("total", total);
+
+  fetch("save_booking.php", {
+    method: "POST",
+    body: formData
+  })
+  .then(res => res.text())
+  .then(response => {
+    if (response.trim() === "success") {
+      alert("✅ Booking saved successfully!");
+    } else {
+      alert("❌ Failed to save booking: " + response);
+    }
+  })
+  .catch(err => {
+    console.error(err);
+    alert("❌ Error occurred during booking.");
+  });
+}
+  </script>
+</body>
+</html>
