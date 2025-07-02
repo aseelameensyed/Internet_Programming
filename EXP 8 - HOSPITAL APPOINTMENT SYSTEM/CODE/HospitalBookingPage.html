@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>XYZ Hospitals - Book Your Appointment</title>
+  <style>
+    :root {
+      --primary: #004080;
+      --accent: #0099cc;
+      --light: #f8fafd;
+      --dark: #1f2937;
+    }
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: var(--light);
+      margin: 0;
+      padding: 0;
+      color: var(--dark);
+    }
+    header {
+      background: linear-gradient(to right, var(--primary), var(--accent));
+      color: white;
+      padding: 20px 40px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    header h1 {
+      margin: 0;
+      font-size: 2rem;
+      font-weight: 600;
+    }
+    header button {
+      padding: 10px 20px;
+      background: white;
+      color: var(--primary);
+      border: none;
+      border-radius: 6px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .container {
+      max-width: 900px;
+      margin: 40px auto;
+      background: white;
+      padding: 40px;
+      border-radius: 16px;
+      box-shadow: 0 12px 40px rgba(0,0,0,0.08);
+    }
+    label {
+      display: block;
+      margin-top: 20px;
+      font-weight: bold;
+    }
+    input, select {
+      width: 100%;
+      padding: 12px;
+      margin-top: 5px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      font-size: 16px;
+      background: #f8fafc;
+    }
+    input[type="date"] {
+      cursor: pointer;
+    }
+    input[type="date"]::-webkit-calendar-picker-indicator {
+      display: none;
+    }
+    button.book {
+      margin-top: 30px;
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 12px 20px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-weight: 600;
+      display: block;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    .summary {
+      margin-top: 50px;
+      background: #ecf7ff;
+      padding: 25px;
+      border-left: 6px solid var(--accent);
+      border-radius: 10px;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>XYZ Hospitals</h1>
+  <button onclick="window.open('admin_panel.html', '_blank')">Admin Panel</button>
+</header>
+
+<div class="container">
+  <h2>Book an Appointment</h2>
+
+  <label>Full Name</label>
+  <input type="text" id="name" />
+
+  <label>Age</label>
+  <input type="number" id="age" />
+
+  <label>Gender</label>
+  <select id="gender">
+    <option value="">Select</option>
+    <option>Male</option>
+    <option>Female</option>
+    <option>Other</option>
+  </select>
+
+  <label>Department</label>
+  <select id="department" onchange="loadDoctors()"></select>
+
+  <label>Doctor</label>
+  <select id="doctor"></select>
+
+  <label>Date</label>
+  <input type="date" id="date" onclick="this.showPicker()" />
+
+  <label>Time Slot</label>
+  <select id="slot"></select>
+
+  <button class="book" onclick="bookAppointment()">Book Appointment</button>
+
+  <div id="summary" class="summary"></div>
+</div>
+
+<script>
+  // Load updated values from localStorage
+  const departments = JSON.parse(localStorage.getItem("departments")) || ["Cardiology", "Orthopedics", "Dermatology"];
+  const doctors = JSON.parse(localStorage.getItem("doctors")) || {
+    Cardiology: ["Dr. Asha", "Dr. Ramesh"],
+    Orthopedics: ["Dr. Vikram", "Dr. Priya"],
+    Dermatology: ["Dr. Meera", "Dr. Karthik"]
+  };
+  const slots = JSON.parse(localStorage.getItem("slots")) || ["10:00 AM", "11:00 AM", "12:00 PM", "2:00 PM", "4:00 PM"];
+  const blocked = JSON.parse(localStorage.getItem("blockedDates")) || [];
+
+  document.addEventListener('DOMContentLoaded', () => {
+    // Load Departments
+    const deptSelect = document.getElementById('department');
+    departments.forEach(dep => {
+      const opt = document.createElement('option');
+      opt.value = dep;
+      opt.textContent = dep;
+      deptSelect.appendChild(opt);
+    });
+
+    // Load Time Slots
+    const slotSelect = document.getElementById('slot');
+    slots.forEach(s => {
+      const opt = document.createElement('option');
+      opt.textContent = s;
+      slotSelect.appendChild(opt);
+    });
+
+    // Block past dates
+    const today = new Date().toISOString().split('T')[0];
+    const dateInput = document.getElementById('date');
+    dateInput.setAttribute('min', today);
+  });
+
+  function loadDoctors() {
+    const dep = document.getElementById('department').value;
+    const docSelect = document.getElementById('doctor');
+    docSelect.innerHTML = '';
+    if (doctors[dep]) {
+      doctors[dep].forEach(doc => {
+        const opt = document.createElement('option');
+        opt.textContent = doc;
+        docSelect.appendChild(opt);
+      });
+    }
+  }
+
+  function bookAppointment() {
+    const name = document.getElementById('name').value;
+    const age = document.getElementById('age').value;
+    const gender = document.getElementById('gender').value;
+    const department = document.getElementById('department').value;
+    const doctor = document.getElementById('doctor').value;
+    const date = document.getElementById('date').value;
+    const slot = document.getElementById('slot').value;
+
+    if (!name || !age || !gender || !department || !doctor || !date || !slot) {
+      alert("Please fill all fields.");
+      return;
+    }
+
+    if (blocked.includes(date)) {
+      alert("Appointments are blocked for this date.");
+      return;
+    }
+
+    // Send to PHP for saving in database (if you use PHP backend)
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", "save_appointment.php", true);
+    xhr.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+    xhr.onload = function () {
+      if (xhr.responseText.trim() === "success") {
+        showSummary(name, age, gender, department, doctor, date, slot);
+      } else {
+        alert("Error saving appointment.");
+      }
+    };
+    xhr.send(
+      `name=${name}&age=${age}&gender=${gender}&department=${department}&doctor=${doctor}&date=${date}&slot=${slot}`
+    );
+  }
+
+  function showSummary(name, age, gender, department, doctor, date, slot) {
+    const summary = document.getElementById('summary');
+    summary.innerHTML = `
+      <h3>Appointment Details</h3>
+      <p><strong>Patient:</strong> ${name}, Age ${age}, ${gender}</p>
+      <p><strong>Department:</strong> ${department}</p>
+      <p><strong>Doctor:</strong> ${doctor}</p>
+      <p><strong>Date:</strong> ${date}</p>
+      <p><strong>Time Slot:</strong> ${slot}</p>
+    `;
+    summary.style.display = 'block';
+    summary.scrollIntoView({ behavior: 'smooth' });
+  }
+</script>
+
+</body>
+</html>

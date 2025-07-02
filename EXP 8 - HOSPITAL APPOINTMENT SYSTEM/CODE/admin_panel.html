@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Admin Panel - XYZ Hospitals</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #f0f4f8;
+      margin: 0;
+      padding: 40px;
+    }
+    .login, .panel {
+      max-width: 700px;
+      margin: auto;
+      background: white;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+    }
+    input, select {
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0 20px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+    }
+    button {
+      padding: 10px 20px;
+      background: #004080;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    h2, h3 {
+      margin-top: 20px;
+    }
+    ul {
+      list-style-type: none;
+      padding: 0;
+    }
+    li {
+      margin-bottom: 8px;
+    }
+    .delete-btn {
+      margin-left: 10px;
+      background-color: #cc0000;
+      border: none;
+      padding: 5px 10px;
+      font-size: 12px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+<div id="loginForm" class="login">
+  <h2>Admin Login</h2>
+  <input type="text" id="adminId" placeholder="Admin ID">
+  <input type="password" id="adminPass" placeholder="Password">
+  <button onclick="login()">Login</button>
+</div>
+
+<div id="adminPanel" class="panel" style="display:none;">
+  <h2>Admin Dashboard - XYZ Hospitals</h2>
+  <p>Use the sections below to manage hospital appointment data:</p>
+
+  <div class="section">
+    <h3>Manage Departments</h3>
+    <input type="text" id="newDept" placeholder="Enter new department name">
+    <button onclick="addDepartment()">Add Department</button>
+    <ul id="deptList"></ul>
+  </div>
+
+  <div class="section">
+    <h3>Manage Doctors</h3>
+    <input type="text" id="newDoctor" placeholder="Doctor Name">
+    <select id="doctorDept"></select>
+    <button onclick="addDoctor()">Add Doctor</button>
+    <ul id="doctorList"></ul>
+  </div>
+
+  <div class="section">
+    <h3>Manage Time Slots</h3>
+    <input type="text" id="newSlot" placeholder="e.g., 3:00 PM">
+    <button onclick="addSlot()">Add Slot</button>
+    <ul id="slotList"></ul>
+  </div>
+
+  <div style="text-align: center; margin-top: 30px;">
+    <button onclick="returnHome()" style="
+      padding: 12px 25px;
+      background-color: #004080;
+      color: white;
+      font-size: 16px;
+      border: none;
+      border-radius: 8px;
+      font-weight: bold;
+      cursor: pointer;">
+      Return to Home Page
+    </button>
+  </div>
+</div>
+
+<script>
+  let departments = JSON.parse(localStorage.getItem('departments')) || ["Cardiology", "Orthopedics", "Dermatology"];
+  let doctors = JSON.parse(localStorage.getItem('doctors')) || {
+    Cardiology: ["Dr. Asha", "Dr. Ramesh"],
+    Orthopedics: ["Dr. Vikram", "Dr. Priya"],
+    Dermatology: ["Dr. Meera", "Dr. Karthik"]
+  };
+  let slots = JSON.parse(localStorage.getItem('slots')) || ["10:00 AM", "11:00 AM", "12:00 PM", "2:00 PM", "4:00 PM"];
+
+  function login() {
+    const id = document.getElementById('adminId').value;
+    const pass = document.getElementById('adminPass').value;
+    if (id === 'aseel123' && pass === 'aseel1') {
+      document.getElementById('loginForm').style.display = 'none';
+      document.getElementById('adminPanel').style.display = 'block';
+      initLists();
+    } else {
+      alert("Invalid credentials.");
+    }
+  }
+
+  function initLists() {
+    const deptSelect = document.getElementById('doctorDept');
+    deptSelect.innerHTML = '';
+    departments.forEach(dep => {
+      const opt = document.createElement('option');
+      opt.value = dep;
+      opt.textContent = dep;
+      deptSelect.appendChild(opt);
+    });
+    updateDepartmentList();
+    updateDoctors();
+    updateList('slotList', slots);
+  }
+
+  function updateList(id, items) {
+    const ul = document.getElementById(id);
+    ul.innerHTML = '';
+    items.forEach((item, index) => {
+      const li = document.createElement('li');
+      li.textContent = item;
+      if (id === 'slotList' || id === 'blockedDates') {
+        const btn = document.createElement('button');
+        btn.textContent = "✕";
+        btn.className = "delete-btn";
+        btn.onclick = () => {
+          items.splice(index, 1);
+          updateList(id, items);
+        };
+        li.appendChild(btn);
+      }
+      ul.appendChild(li);
+    });
+  }
+
+  function updateDepartmentList() {
+    const ul = document.getElementById('deptList');
+    ul.innerHTML = '';
+    departments.forEach((dep, i) => {
+      const li = document.createElement('li');
+      li.textContent = dep;
+      const btn = document.createElement('button');
+      btn.textContent = "Delete";
+      btn.className = "delete-btn";
+      btn.onclick = () => {
+        departments.splice(i, 1);
+        delete doctors[dep];
+        initLists();
+      };
+      li.appendChild(btn);
+      ul.appendChild(li);
+    });
+  }
+
+  function updateDoctors() {
+    const ul = document.getElementById('doctorList');
+    ul.innerHTML = '';
+    for (const dep in doctors) {
+      doctors[dep].forEach((doc, i) => {
+        const li = document.createElement('li');
+        li.textContent = `${doc} (${dep})`;
+        const btn = document.createElement('button');
+        btn.textContent = "Delete";
+        btn.className = "delete-btn";
+        btn.onclick = () => {
+          doctors[dep].splice(i, 1);
+          updateDoctors();
+        };
+        li.appendChild(btn);
+        ul.appendChild(li);
+      });
+    }
+  }
+
+  function addDepartment() {
+    const val = document.getElementById('newDept').value.trim();
+    if (val && !departments.includes(val)) {
+      departments.push(val);
+      doctors[val] = [];
+      document.getElementById('newDept').value = '';
+      initLists();
+    }
+  }
+
+  function addDoctor() {
+    const doc = document.getElementById('newDoctor').value.trim();
+    const dept = document.getElementById('doctorDept').value;
+    if (doc && dept && !doctors[dept].includes(doc)) {
+      doctors[dept].push(doc);
+      document.getElementById('newDoctor').value = '';
+      updateDoctors();
+    }
+  }
+
+  function addSlot() {
+    const slot = document.getElementById('newSlot').value.trim();
+    if (slot && !slots.includes(slot)) {
+      slots.push(slot);
+      document.getElementById('newSlot').value = '';
+      updateList('slotList', slots);
+    }
+  }
+
+  function returnHome() {
+    localStorage.setItem('departments', JSON.stringify(departments));
+    localStorage.setItem('doctors', JSON.stringify(doctors));
+    localStorage.setItem('slots', JSON.stringify(slots));
+    window.location.href = 'HospitalBookingPage.html';
+  }
+</script>
+
+</body>
+</html>
