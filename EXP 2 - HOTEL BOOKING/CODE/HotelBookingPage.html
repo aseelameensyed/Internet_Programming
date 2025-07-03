@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>EZ Stay - Luxury Hotel Booking</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      margin: 0;
+      padding: 0;
+      background: linear-gradient(to right, #f0f2f5, #dfe9f3);
+    }
+    header {
+      background: #00264d;
+      color: white;
+      padding: 25px;
+      text-align: center;
+      font-size: 28px;
+      font-weight: bold;
+      letter-spacing: 1px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+    }
+    .container {
+      max-width: 900px;
+      margin: 30px auto;
+      background: white;
+      padding: 35px;
+      border-radius: 20px;
+      box-shadow: 0 0 20px rgba(0,0,0,0.1);
+    }
+    label {
+      font-weight: bold;
+      display: block;
+      margin-top: 20px;
+    }
+    select, input[type="text"], input[type="email"], input[type="tel"], input[type="date"], input[type="number"] {
+      width: 100%;
+      padding: 12px;
+      margin-top: 8px;
+      border-radius: 10px;
+      border: 1px solid #ccc;
+      font-size: 16px;
+      background-color: #f5f9ff;
+      box-sizing: border-box;
+    }
+    .btn {
+      margin-top: 25px;
+      background: #004080;
+      color: white;
+      padding: 14px 24px;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: 16px;
+      font-weight: bold;
+      display: inline-block;
+    }
+    .room {
+      margin-top: 10px;
+      padding: 15px;
+      border-radius: 12px;
+      background: #eef5ff;
+      box-shadow: inset 0 0 5px rgba(0,0,0,0.1);
+    }
+    .hotel-card {
+      margin-top: 20px;
+      padding: 20px;
+      background: #f1f8ff;
+      border-radius: 14px;
+      border-left: 6px solid #004080;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+    }
+    .hidden {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+<header>EZ Stay</header>
+
+<div class="container">
+  <label>Location</label>
+  <select id="location">
+    <option>Chennai</option>
+    <option>Bangalore</option>
+    <option>Mumbai</option>
+    <option>Delhi</option>
+    <option>Kolkata</option>
+    <option>Hyderabad</option>
+    <option>Ahmedabad</option>
+    <option>Jaipur</option>
+  </select>
+
+  <label>Check-in Date</label>
+  <input type="date" id="checkin" onclick="this.showPicker()" />
+
+  <label>Check-out Date</label>
+  <input type="date" id="checkout" onclick="this.showPicker()" />
+
+  <label>Travelers</label>
+  <input type="number" id="travelers" min="1" value="1" />
+
+  <div id="roomsContainer"></div>
+  <button onclick="addRoom()" class="btn">+ Add Room</button>
+
+  <button onclick="searchHotels()" class="btn">Search</button>
+</div>
+
+<!-- Hotel Results -->
+<div id="hotelResults" class="container hidden">
+  <h2>Available Hotels</h2>
+  <div id="hotelList"></div>
+</div>
+
+<!-- Room Selection -->
+<div id="roomSelection" class="container hidden">
+  <h2>Select Room Type - <span id="hotelName"></span></h2>
+  <label>Room Type</label>
+  <select id="roomType">
+    <option>Executive Suite - ₹4000</option>
+    <option>Club Room - ₹3000</option>
+    <option>Deluxe Room - ₹2500</option>
+  </select>
+
+  <h3>Enter Your Details</h3>
+  <label>Full Name</label>
+  <input type="text" id="userName" />
+  <label>Email</label>
+  <input type="email" id="userEmail" />
+  <label>Phone</label>
+  <input type="tel" id="userPhone" />
+
+  <button class="btn" onclick="confirmBooking()">Confirm Booking</button>
+</div>
+
+<!-- Summary -->
+<div id="summary" class="container hidden"></div>
+
+<script>
+  const hotelData = {
+    Chennai: [
+      "Radisson Blu, Adyar, Chennai",
+      "T. Nagar Residency, T. Nagar, Chennai",
+      "Velachery Grand, Velachery, Chennai",
+      "Guindy Retreat, Guindy, Chennai",
+      "Marina Bay Inn, Mylapore, Chennai",
+      "Kodambakkam Comforts, Kodambakkam, Chennai",
+      "OMR Suites, Thoraipakkam, Chennai"
+    ],
+    Bangalore: [
+      "The Leela Palace, Indiranagar, Bangalore",
+      "Koramangala Comfort, Koramangala, Bangalore",
+      "MG Road Residency, MG Road, Bangalore",
+      "Whitefield Grand, Whitefield, Bangalore",
+      "Electronic City Stay, Electronic City, Bangalore",
+      "Jayanagar Palace, Jayanagar, Bangalore",
+      "Hebbal Horizon, Hebbal, Bangalore"
+    ],
+    Mumbai: [
+      "Taj Lands End, Bandra, Mumbai",
+      "Colaba Castle, Colaba, Mumbai",
+      "Juhu Sands, Juhu, Mumbai",
+      "Andheri Comfort, Andheri, Mumbai",
+      "Powai Lakefront, Powai, Mumbai",
+      "Dadar Heights, Dadar, Mumbai",
+      "Kurla Residency, Kurla, Mumbai"
+    ]
+    // Add more cities and hotels as needed
+  };
+
+  function addRoom() {
+    const container = document.getElementById("roomsContainer");
+    const div = document.createElement("div");
+    div.className = "room";
+    div.innerHTML = `
+      <label>Room Members</label>
+      <input type="number" min="1" placeholder="Number of people in this room" />
+    `;
+    container.appendChild(div);
+  }
+
+  function searchHotels() {
+    const city = document.getElementById('location').value;
+    const checkin = document.getElementById('checkin').value;
+    const checkout = document.getElementById('checkout').value;
+
+    if (!checkin || !checkout || new Date(checkin) >= new Date(checkout)) {
+      alert("Please select valid check-in and check-out dates.");
+      return;
+    }
+
+    const hotelList = document.getElementById("hotelList");
+    hotelList.innerHTML = '';
+
+    if (hotelData[city]) {
+      hotelData[city].forEach(name => {
+        const div = document.createElement("div");
+        div.className = "hotel-card";
+        div.innerHTML = `
+          <h3>${name.split(',')[0]}</h3>
+          <p>Address: ${name}</p>
+          <button class="btn" onclick="showRoomOptions('${name}')">Select Room</button>
+        `;
+        hotelList.appendChild(div);
+      });
+    } else {
+      hotelList.innerHTML = '<p>No hotels found for selected city.</p>';
+    }
+
+    document.getElementById('hotelResults').classList.remove('hidden');
+    document.getElementById('roomSelection').classList.add('hidden');
+    document.getElementById('summary').classList.add('hidden');
+
+    document.getElementById('hotelResults').scrollIntoView({ behavior: 'smooth' });
+  }
+
+  function showRoomOptions(hotel) {
+    document.getElementById('hotelName').textContent = hotel;
+    document.getElementById('roomSelection').classList.remove('hidden');
+    document.getElementById('roomSelection').scrollIntoView({ behavior: 'smooth' });
+  }
+
+  function confirmBooking() {
+    const name = document.getElementById('userName').value;
+    const email = document.getElementById('userEmail').value;
+    const phone = document.getElementById('userPhone').value;
+    const hotel = document.getElementById('hotelName').textContent;
+    const roomType = document.getElementById('roomType').value;
+
+    if (!name || !email || !phone) {
+      alert("Please fill all details.");
+      return;
+    }
+
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", "save_booking.php", true);
+    xhr.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+    xhr.onload = function () {
+      if (xhr.status === 200 && xhr.responseText.trim().toLowerCase().includes("success")) {
+        document.getElementById('summary').classList.remove('hidden');
+        document.getElementById('summary').innerHTML = `
+          <h2>Booking Confirmed!</h2>
+          <p><strong>Name:</strong> ${name}</p>
+          <p><strong>Email:</strong> ${email}</p>
+          <p><strong>Phone:</strong> ${phone}</p>
+          <p><strong>Hotel:</strong> ${hotel}</p>
+          <p><strong>Room Type:</strong> ${roomType}</p>
+        `;
+        document.getElementById('summary').scrollIntoView({ behavior: 'smooth' });
+      } else {
+        alert("Booking failed! Please try again.");
+      }
+    };
+    xhr.send(`name=${encodeURIComponent(name)}&email=${encodeURIComponent(email)}&phone=${encodeURIComponent(phone)}&hotel=${encodeURIComponent(hotel)}&room=${encodeURIComponent(roomType)}`);
+  }
+
+  // Date validation
+  const today = new Date().toISOString().split('T')[0];
+  const checkinInput = document.getElementById('checkin');
+  const checkoutInput = document.getElementById('checkout');
+  checkinInput.setAttribute('min', today);
+  checkoutInput.setAttribute('min', today);
+
+  checkinInput.addEventListener('change', function () {
+    const checkinDate = this.value;
+    if (checkinDate) {
+      checkoutInput.setAttribute('min', checkinDate);
+    }
+  });
+</script>
+</body>
+</html>
