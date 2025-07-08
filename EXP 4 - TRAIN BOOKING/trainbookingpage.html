@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>RailEZ - Book Your Train Journey</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #0066cc;
+      --accent: #00acc1;
+      --bg-light: #f0f4f8;
+      --bg-dark: #ffffff;
+      --text-main: #0f172a;
+      --text-sub: #64748b;
+      --gradient: linear-gradient(to right, #0066cc, #00acc1);
+    }
+    * {
+      box-sizing: border-box;
+      font-family: 'Inter', sans-serif;
+    }
+    body {
+      margin: 0;
+      background: var(--bg-light);
+      color: var(--text-main);
+    }
+    header {
+      background: var(--gradient);
+      padding: 20px;
+      text-align: center;
+      color: white;
+    }
+    header h1 {
+      margin: 0;
+      font-family: 'Playfair Display', serif;
+      font-size: 2.5rem;
+    }
+    .container {
+      max-width: 1000px;
+      margin: 40px auto;
+      background: white;
+      padding: 40px;
+      border-radius: 20px;
+      box-shadow: 0 12px 40px rgba(0,0,0,0.08);
+    }
+    label {
+      display: block;
+      margin-top: 20px;
+      font-weight: 600;
+    }
+    select, input[type="date"], input[type="number"], input[type="text"], input[type="tel"] {
+      width: 100%;
+      padding: 12px;
+      margin-top: 5px;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      background: #f8fafc;
+      font-size: 16px;
+    }
+    button {
+      display: block;
+      padding: 12px 20px;
+      background: var(--gradient);
+      color: white;
+      font-size: 16px;
+      font-weight: 600;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      margin: 30px auto;
+      transition: 0.3s ease;
+    }
+    button:hover {
+      opacity: 0.9;
+    }
+    .section {
+      display: none;
+      margin-top: 40px;
+    }
+    .train-card, .summary-card {
+      background: #f8fafc;
+      padding: 20px;
+      border-radius: 15px;
+      margin-bottom: 20px;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.05);
+    }
+    .seats {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 10px 20px;
+      margin-top: 20px;
+      padding: 10px 0;
+    }
+    .seat {
+      background: #cbd5e1;
+      padding: 16px;
+      border-radius: 8px;
+      text-align: center;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    .seat.selected {
+      background: var(--primary);
+      color: white;
+    }
+    .seat.blocked {
+      background: #94a3b8;
+      cursor: not-allowed;
+      color: white;
+    }
+    .summary-card {
+      background: #ffffff;
+      border-left: 6px solid var(--accent);
+      padding: 30px;
+      border-radius: 12px;
+      font-size: 16px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+    }
+    .summary-card h3 {
+      font-family: 'Playfair Display', serif;
+      color: var(--primary);
+      margin-bottom: 10px;
+      font-size: 22px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>RailEZ - Reserve Your Train Journey</h1>
+  </header>
+  <div class="container">
+    <label>From Station:</label>
+    <select id="fromCity" onchange="updateToCities()">
+      <option value="">Select From Station</option>
+      <option>Delhi</option>
+      <option>Mumbai</option>
+      <option>Kolkata</option>
+      <option>Chennai</option>
+      <option>Bangalore</option>
+    </select>
+
+    <label>To Station:</label>
+    <select id="toCity"></select>
+
+    <label>Date of Journey:</label>
+    <input type="date" id="travelDate">
+
+    <label>Number of Passengers:</label>
+    <input type="number" id="passengers" min="1" max="6">
+
+    <button onclick="showTrains()">Search Trains</button>
+
+    <div id="trainList" class="section"></div>
+    <div id="passengerDetails" class="section"></div>
+    <div id="seatSelection" class="section"></div>
+    <div id="ticketSummary" class="section"></div>
+  </div>
+
+  <script>
+    const cities = ["Delhi", "Mumbai", "Kolkata", "Chennai", "Bangalore"];
+    const stations = {
+      Delhi: "NDLS",
+      Mumbai: "CSTM",
+      Kolkata: "HWH",
+      Chennai: "MAS",
+      Bangalore: "SBC"
+    };
+    const trains = [
+      { name: "Rajdhani Express", start: "06:00 AM", end: "10:30 AM", price: 850 },
+      { name: "Shatabdi Express", start: "08:00 AM", end: "12:00 PM", price: 920 },
+      { name: "Duronto Express", start: "09:00 AM", end: "01:30 PM", price: 890 },
+      { name: "Intercity Express", start: "12:00 PM", end: "04:00 PM", price: 910 },
+      { name: "Garib Rath", start: "03:00 PM", end: "07:15 PM", price: 845 }
+    ];
+    const blockedSeats = ['A1', 'B2', 'C3', 'D4'];
+    let selectedTrain = null;
+    let selectedSeats = [];
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const today = new Date().toISOString().split('T')[0];
+      document.getElementById('travelDate').setAttribute('min', today);
+    });
+
+    function updateToCities() {
+      const from = document.getElementById("fromCity").value;
+      const toSelect = document.getElementById("toCity");
+      toSelect.innerHTML = '<option value="">Select To Station</option>';
+      cities.filter(c => c !== from).forEach(c => {
+        const opt = document.createElement("option");
+        opt.textContent = c;
+        toSelect.appendChild(opt);
+      });
+    }
+
+    function showTrains() {
+      const from = document.getElementById('fromCity').value;
+      const to = document.getElementById('toCity').value;
+      const date = document.getElementById('travelDate').value;
+      const passengers = document.getElementById('passengers').value;
+      if (!from || !to || !date || !passengers) return alert("Please fill all fields.");
+
+      const list = document.getElementById('trainList');
+      list.innerHTML = '<h2>Available Trains</h2>';
+      trains.forEach((train, i) => {
+        const card = document.createElement('div');
+        card.className = 'train-card';
+        card.innerHTML = `
+          <strong>${train.name}</strong><br>
+          Departure: ${train.start} → Arrival: ${train.end}<br>
+          Fare: ₹${train.price} per seat<br>
+          Boarding: ${stations[from]}<br>
+          Destination: ${stations[to]}<br>
+          <button onclick="selectTrain(${i})">Select This Train</button>`;
+        list.appendChild(card);
+      });
+      list.style.display = 'block';
+    }
+
+    function selectTrain(index) {
+      selectedTrain = trains[index];
+      document.getElementById('passengerDetails').innerHTML = `
+        <h2>Passenger Details</h2>
+        <label>Full Name</label><input type="text" id="passengerName">
+        <label>Age</label><input type="number" id="passengerAge">
+        <label>Gender</label><select id="passengerGender">
+          <option value="">Select Gender</option><option>Male</option><option>Female</option></select>
+        <label>Phone Number</label><input type="tel" id="passengerPhone">
+        <button onclick="showSeats()">Continue to Seat Selection</button>
+      `;
+      document.getElementById('passengerDetails').style.display = 'block';
+    }
+
+    function showSeats() {
+      const layout = document.getElementById('seatSelection');
+      layout.innerHTML = '<h2>Select Your Seats</h2><div class="seats" id="seatGrid"></div><button onclick="showSummary()">Confirm Seats</button>';
+      const grid = document.getElementById('seatGrid');
+      const rows = ['A','B','C','D','E'];
+      grid.innerHTML = '';
+      selectedSeats = [];
+      rows.forEach(row => {
+        for (let i = 1; i <= 4; i++) {
+          const seatId = row + i;
+          const div = document.createElement('div');
+          div.className = 'seat';
+          div.innerText = seatId;
+          if (blockedSeats.includes(seatId)) div.classList.add('blocked');
+          div.onclick = () => toggleSeat(div, seatId);
+          grid.appendChild(div);
+        }
+      });
+      layout.style.display = 'block';
+    }
+
+    function toggleSeat(el, seat) {
+      if (el.classList.contains('blocked')) return;
+      const max = parseInt(document.getElementById('passengers').value);
+      if (el.classList.contains('selected')) {
+        el.classList.remove('selected');
+        selectedSeats = selectedSeats.filter(s => s !== seat);
+      } else {
+        if (selectedSeats.length >= max) return alert("Maximum seats selected");
+        el.classList.add('selected');
+        selectedSeats.push(seat);
+      }
+    }
+
+    function showSummary() {
+      const name = document.getElementById('passengerName').value;
+      const age = document.getElementById('passengerAge').value;
+      const gender = document.getElementById('passengerGender').value;
+      const phone = document.getElementById('passengerPhone').value;
+      if (!name || !age || !gender || !phone || selectedSeats.length === 0) {
+        alert("Please fill all details and select seats.");
+        return;
+      }
+
+      const from = document.getElementById('fromCity').value;
+      const to = document.getElementById('toCity').value;
+      const date = document.getElementById('travelDate').value;
+      const total = selectedSeats.length * selectedTrain.price;
+
+      document.getElementById('ticketSummary').innerHTML = `
+        <div class="summary-card">
+          <h3>🎫 E-Ticket | RailEZ</h3>
+          <p><strong>Passenger:</strong> ${name} (${gender}, Age ${age})<br>
+          <strong>Phone:</strong> ${phone}<br>
+          <strong>From:</strong> ${from} (${stations[from]})<br>
+          <strong>To:</strong> ${to} (${stations[to]})<br>
+          <strong>Date:</strong> ${date}<br>
+          <strong>Train:</strong> ${selectedTrain.name}<br>
+          <strong>Timings:</strong> ${selectedTrain.start} → ${selectedTrain.end}<br>
+          <strong>Seats:</strong> ${selectedSeats.join(', ')}<br>
+          <strong>Total Fare:</strong> ₹${total}</p>
+        </div>`;
+      document.getElementById('ticketSummary').style.display = 'block';
+
+      // Save to server
+      const formData = new FormData();
+      formData.append("name", name);
+      formData.append("age", age);
+      formData.append("gender", gender);
+      formData.append("phone", phone);
+      formData.append("from", from);
+      formData.append("to", to);
+      formData.append("date", date);
+      formData.append("train", selectedTrain.name);
+      formData.append("start", selectedTrain.start);
+      formData.append("end", selectedTrain.end);
+      formData.append("seats", selectedSeats.join(", "));
+      formData.append("total", total);
+
+      fetch("save_train_booking.php", {
+        method: "POST",
+        body: formData
+      })
+      .then(res => res.text())
+      .then(response => {
+        if (response.trim() === "success") {
+          alert("✅ Booking saved successfully!");
+        } else {
+          alert("❌ Error: " + response);
+        }
+      })
+      .catch(err => {
+        alert("❌ Failed to save booking.");
+      });
+    }
+  </script>
+</body>
+</html>
