@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>SweetBite - Order Cakes Online</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #fff8f0;
+      margin: 0;
+      padding: 0;
+    }
+    header {
+      background: linear-gradient(to right, #ff6f61, #ffb347);
+      color: white;
+      text-align: center;
+      padding: 2rem 1rem;
+    }
+    header h1 {
+      margin: 0;
+      font-size: 2.5rem;
+    }
+    .container {
+      max-width: 600px;
+      margin: 30px auto;
+      background: white;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+    }
+    label {
+      display: block;
+      margin-top: 15px;
+      font-weight: 600;
+    }
+    input, select, textarea {
+      width: 100%;
+      padding: 10px;
+      margin-top: 5px;
+      font-size: 16px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+    }
+    button {
+      margin-top: 20px;
+      padding: 12px;
+      font-size: 16px;
+      color: white;
+      background: #ff6f61;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #e65c50;
+    }
+    .success {
+      color: green;
+      text-align: center;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>SweetBite Cake Order</h1>
+  </header>
+  <div class="container">
+    <form id="cakeForm">
+      <label>Customer Name:</label>
+      <input type="text" name="name" required>
+
+      <label>Phone Number:</label>
+      <input type="tel" name="phone" required>
+
+      <label>Choose Cake Type:</label>
+      <select name="cake_type" required>
+        <option value="">-- Select --</option>
+        <option>Chocolate</option>
+        <option>Vanilla</option>
+        <option>Red Velvet</option>
+        <option>Butterscotch</option>
+        <option>Black Forest</option>
+      </select>
+
+      <label>Size:</label>
+      <select name="size" required>
+        <option value="">-- Select --</option>
+        <option>1/2 Kg</option>
+        <option>1 Kg</option>
+        <option>2 Kg</option>
+        <option>Custom</option>
+      </select>
+
+      <label>Delivery Address:</label>
+      <textarea name="address" rows="3" required></textarea>
+
+      <label>Delivery Date:</label>
+      <input type="date" name="delivery_date" required>
+
+      <button type="submit">Place Order</button>
+    </form>
+
+    <div id="response" class="success"></div>
+  </div>
+
+  <script>
+    document.getElementById("cakeForm").addEventListener("submit", function(e) {
+      e.preventDefault();
+      const formData = new FormData(this);
+      fetch("save_order.php", {
+        method: "POST",
+        body: formData
+      })
+      .then(res => res.text())
+      .then(response => {
+        document.getElementById("response").innerText = response.trim() === "success"
+          ? "🎉 Your cake order has been placed successfully!"
+          : "❌ Failed to place order: " + response;
+        if (response.trim() === "success") this.reset();
+      })
+      .catch(err => {
+        document.getElementById("response").innerText = "❌ Error connecting to server.";
+      });
+    });
+  </script>
+</body>
+</html>
