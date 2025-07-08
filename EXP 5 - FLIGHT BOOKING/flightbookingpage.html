@@ -1,0 +1,269 @@
+<!-- flightbookingpage.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>FlyEZ - Book Your Flight</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #1e3a8a;
+      --accent: #00bcd4;
+      --bg-light: #f0f4f8;
+      --bg-dark: #ffffff;
+      --text-main: #0f172a;
+      --gradient: linear-gradient(to right, #1e3a8a, #00bcd4);
+    }
+    * {
+      box-sizing: border-box;
+      font-family: 'Inter', sans-serif;
+    }
+    body {
+      margin: 0;
+      background: var(--bg-light);
+      color: var(--text-main);
+    }
+    header {
+      background: var(--gradient);
+      padding: 20px;
+      text-align: center;
+      color: white;
+    }
+    header h1 {
+      margin: 0;
+      font-family: 'Playfair Display', serif;
+      font-size: 2.5rem;
+    }
+    .container {
+      max-width: 1000px;
+      margin: 40px auto;
+      background: white;
+      padding: 40px;
+      border-radius: 20px;
+      box-shadow: 0 12px 40px rgba(0,0,0,0.08);
+    }
+    label {
+      display: block;
+      margin-top: 20px;
+      font-weight: 600;
+    }
+    select, input[type="date"], input[type="number"], input[type="text"], input[type="tel"] {
+      width: 100%;
+      padding: 12px;
+      margin-top: 5px;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      background: #f8fafc;
+      font-size: 16px;
+    }
+    button {
+      display: block;
+      padding: 12px 20px;
+      background: var(--gradient);
+      color: white;
+      font-size: 16px;
+      font-weight: 600;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      margin: 30px auto;
+      transition: 0.3s ease;
+    }
+    button:hover {
+      opacity: 0.9;
+    }
+    .section {
+      display: none;
+      margin-top: 40px;
+    }
+    .flight-card, .summary-card {
+      background: #f8fafc;
+      padding: 20px;
+      border-radius: 15px;
+      margin-bottom: 20px;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.05);
+    }
+    .summary-card {
+      background: #ffffff;
+      border-left: 6px solid var(--accent);
+      padding: 30px;
+      border-radius: 12px;
+      font-size: 16px;
+    }
+    .summary-card h3 {
+      font-family: 'Playfair Display', serif;
+      color: var(--primary);
+      margin-bottom: 10px;
+      font-size: 22px;
+    }
+  </style>
+</head>
+<body>
+  <header><h1>FlyEZ - Book Your Flight</h1></header>
+  <div class="container">
+    <label>From Airport:</label>
+    <select id="fromCity" onchange="updateToCities()">
+      <option value="">Select From</option>
+      <option>Delhi</option>
+      <option>Mumbai</option>
+      <option>Chennai</option>
+      <option>Kolkata</option>
+      <option>Bangalore</option>
+    </select>
+
+    <label>To Airport:</label>
+    <select id="toCity"></select>
+
+    <label>Date of Flight:</label>
+    <input type="date" id="flightDate">
+
+    <label>Passengers:</label>
+    <input type="number" id="passengers" min="1" max="5">
+
+    <button onclick="showFlights()">Search Flights</button>
+
+    <div id="flightList" class="section"></div>
+    <div id="passengerDetails" class="section"></div>
+    <div id="ticketSummary" class="section"></div>
+  </div>
+
+  <script>
+    const cities = ["Delhi", "Mumbai", "Chennai", "Kolkata", "Bangalore"];
+    const airports = {
+      Delhi: "DEL",
+      Mumbai: "BOM",
+      Chennai: "MAA",
+      Kolkata: "CCU",
+      Bangalore: "BLR"
+    };
+    const flights = [
+      { name: "IndiGo 6E102", depart: "06:00 AM", arrive: "08:30 AM", price: 4500 },
+      { name: "Air India AI203", depart: "09:00 AM", arrive: "11:45 AM", price: 5200 },
+      { name: "Vistara UK101", depart: "12:30 PM", arrive: "03:00 PM", price: 4900 },
+      { name: "SpiceJet SG305", depart: "04:00 PM", arrive: "06:15 PM", price: 4700 },
+      { name: "GoFirst G810", depart: "08:00 PM", arrive: "10:45 PM", price: 4300 }
+    ];
+    let selectedFlight = null;
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const today = new Date().toISOString().split('T')[0];
+      document.getElementById('flightDate').setAttribute('min', today);
+    });
+
+    function updateToCities() {
+      const from = document.getElementById("fromCity").value;
+      const toSelect = document.getElementById("toCity");
+      toSelect.innerHTML = '<option value="">Select To</option>';
+      cities.filter(c => c !== from).forEach(c => {
+        const opt = document.createElement("option");
+        opt.textContent = c;
+        toSelect.appendChild(opt);
+      });
+    }
+
+    function showFlights() {
+      const from = document.getElementById('fromCity').value;
+      const to = document.getElementById('toCity').value;
+      const date = document.getElementById('flightDate').value;
+      const passengers = document.getElementById('passengers').value;
+
+      if (!from || !to || !date || !passengers) return alert("Please fill all fields");
+
+      const list = document.getElementById('flightList');
+      list.innerHTML = '<h2>Available Flights</h2>';
+      flights.forEach((flight, i) => {
+        const card = document.createElement('div');
+        card.className = 'flight-card';
+        card.innerHTML = `
+          <strong>${flight.name}</strong><br>
+          Departure: ${flight.depart} → Arrival: ${flight.arrive}<br>
+          From: ${airports[from]} → To: ${airports[to]}<br>
+          Fare: ₹${flight.price} per person<br>
+          <button onclick="selectFlight(${i})">Select This Flight</button>`;
+        list.appendChild(card);
+      });
+      list.style.display = 'block';
+    }
+
+    function selectFlight(index) {
+      selectedFlight = flights[index];
+      document.getElementById('passengerDetails').innerHTML = `
+        <h2>Passenger Details</h2>
+        <label>Full Name</label><input type="text" id="name">
+        <label>Age</label><input type="number" id="age">
+        <label>Gender</label><select id="gender">
+          <option value="">Select</option><option>Male</option><option>Female</option></select>
+        <label>Phone</label><input type="tel" id="phone">
+        <button onclick="showSummary()">Confirm Booking</button>
+      `;
+      document.getElementById('passengerDetails').style.display = 'block';
+    }
+
+    function showSummary() {
+      const name = document.getElementById('name').value;
+      const age = document.getElementById('age').value;
+      const gender = document.getElementById('gender').value;
+      const phone = document.getElementById('phone').value;
+      const from = document.getElementById('fromCity').value;
+      const to = document.getElementById('toCity').value;
+      const date = document.getElementById('flightDate').value;
+      const count = document.getElementById('passengers').value;
+      const total = count * selectedFlight.price;
+
+      if (!name || !age || !gender || !phone) {
+        alert("Fill all passenger details.");
+        return;
+      }
+
+      document.getElementById('ticketSummary').innerHTML = `
+        <div class="summary-card">
+          <h3>✈️ Flight Ticket | FlyEZ</h3>
+          <p><strong>Passenger:</strong> ${name} (${gender}, Age ${age})<br>
+          <strong>Phone:</strong> ${phone}<br>
+          <strong>From:</strong> ${from} (${airports[from]})<br>
+          <strong>To:</strong> ${to} (${airports[to]})<br>
+          <strong>Date:</strong> ${date}<br>
+          <strong>Flight:</strong> ${selectedFlight.name}<br>
+          <strong>Time:</strong> ${selectedFlight.depart} → ${selectedFlight.arrive}<br>
+          <strong>Passengers:</strong> ${count}<br>
+          <strong>Total:</strong> ₹${total}</p>
+        </div>
+      `;
+
+      document.getElementById('ticketSummary').style.display = 'block';
+
+      // Save to server
+      const formData = new FormData();
+      formData.append("name", name);
+      formData.append("age", age);
+      formData.append("gender", gender);
+      formData.append("phone", phone);
+      formData.append("from", from);
+      formData.append("to", to);
+      formData.append("date", date);
+      formData.append("flight", selectedFlight.name);
+      formData.append("depart", selectedFlight.depart);
+      formData.append("arrive", selectedFlight.arrive);
+      formData.append("count", count);
+      formData.append("total", total);
+
+      fetch("save_flight_booking.php", {
+        method: "POST",
+        body: formData
+      })
+      .then(res => res.text())
+      .then(response => {
+        if (response.trim() === "success") {
+          alert("✅ Booking successful!");
+        } else {
+          alert("❌ " + response);
+        }
+      })
+      .catch(err => {
+        alert("❌ Server error");
+      });
+    }
+  </script>
+</body>
+</html>
