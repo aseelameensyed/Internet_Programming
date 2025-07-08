@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Beauty Parlor Appointment</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: linear-gradient(to right, #ffe6f0, #fff0f5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .form-container {
+            background-color: #ffffff;
+            border-radius: 15px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+            padding: 30px;
+            width: 400px;
+        }
+
+        .form-container h2 {
+            text-align: center;
+            color: #d63384;
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-top: 15px;
+            font-weight: bold;
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 10px;
+            margin-top: 5px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            margin-top: 20px;
+            background-color: #d63384;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #ad1457;
+        }
+
+        .success {
+            text-align: center;
+            color: green;
+            font-weight: bold;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="form-container">
+        <h2>Book Your Beauty Appointment</h2>
+        <form action="book.php" method="POST">
+            <label for="name">Full Name:</label>
+            <input type="text" name="name" required>
+
+            <label for="phone">Phone (+91):</label>
+            <input type="text" name="phone" value="+91" required>
+
+            <label for="email">Email:</label>
+            <input type="email" name="email" required>
+
+            <label for="service">Service:</label>
+            <select name="service" required>
+                <option value="">-- Select Service --</option>
+                <option value="Haircut">Haircut</option>
+                <option value="Facial">Facial</option>
+                <option value="Makeup">Makeup</option>
+                <option value="Manicure">Manicure</option>
+                <option value="Pedicure">Pedicure</option>
+            </select>
+
+            <label for="date">Preferred Date:</label>
+            <input type="date" name="date" required>
+
+            <label for="time">Time Slot:</label>
+            <select name="time" required>
+                <option value="">-- Select Time --</option>
+                <option value="10:00 AM">10:00 AM</option>
+                <option value="12:00 PM">12:00 PM</option>
+                <option value="2:00 PM">2:00 PM</option>
+                <option value="4:00 PM">4:00 PM</option>
+                <option value="6:00 PM">6:00 PM</option>
+            </select>
+
+            <label for="notes">Additional Notes:</label>
+            <textarea name="notes" rows="3" placeholder="Optional"></textarea>
+
+            <button type="submit">Book Appointment</button>
+        </form>
+        <?php if (isset($_GET['success'])): ?>
+            <div class="success">Appointment Booked Successfully!</div>
+        <?php endif; ?>
+    </div>
+</body>
+</html>
